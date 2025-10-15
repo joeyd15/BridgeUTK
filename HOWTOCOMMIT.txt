@@ -1,0 +1,9 @@
+1. make your changes in vscode 
+2. go to terminal: cd Downloads/NICK-WEB-CLUB 
+3. do a git add .
+        git commit -m "NAME OF COMMIT" 
+        git push origin main --force 
+4. go to github and make sure the repo updates (should be instant)
+5. go to Settings -> pages -> in the domain box: 
+                            put: bridgeutk.edu and click save 
+                            wait for the DNS to day success and the website should update instantly 
