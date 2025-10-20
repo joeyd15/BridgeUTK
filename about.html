@@ -26,6 +26,14 @@
       top: 0; left: 0;
       width: 100%; height: 100%;
     }
+    .benefits-section img {
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .benefit-title {
+      font-weight: 700;
+      color: #333;
+    }
   </style>
 </head>
 <body>
@@ -90,8 +98,61 @@
     </div>
   </section>
 
-  <!-- Ribbon with Social/Links Buttons  -->
-  <section class="ribbon-section bg-light py-4">
+  <!-- NEW: Professional Benefits Section -->
+  <section class="benefits-section bg-light py-5">
+    <div class="container">
+      <h2 class="text-center fw-bold mb-5">Professional Benefits</h2>
+
+      <!-- Summit Section -->
+      <div class="row align-items-center mb-5">
+        <div class="col-md-6 mb-4 mb-md-0">
+          <img src="images/bridgeexec.png" class="img-fluid" alt="BridgeUTK Executive Summit">
+        </div>
+        <div class="col-md-6">
+          <h4 class="benefit-title mb-3">Summit</h4>
+          <p>
+            Executive board members get an all-expenses-paid trip to <strong>Summit</strong> every summer. At Summit, we hear from speakers such as 
+            <strong>Andrew Yang</strong> and <strong>Chris Evans</strong> about their experiences, as well as meet and learn from other chapter leaders. 
+            It's often a great opportunity to meet potential employers and make new friends. Past Summit locations include Chicago, Orlando, and Indianapolis. 
+            If you are interested in such a trip, it is highly encouraged to apply for the executive board.
+          </p>
+        </div>
+      </div>
+
+      <!-- Speakers Images -->
+      <div class="row text-center mb-5">
+        <div class="col-md-6 mb-4">
+          <img src="images/andrew.png" class="img-fluid w-75" alt="Andrew Yang speaking">
+          <p class="mt-2 text-muted"><em>Andrew Yang speaking at Summit</em></p>
+        </div>
+        <div class="col-md-6 mb-4">
+          <img src="images/chrisevans.png" class="img-fluid w-75" alt="Chris Evans at Summit">
+          <p class="mt-2 text-muted"><em>Chris Evans sharing his insights at Summit</em></p>
+        </div>
+      </div>
+
+      <!-- Workshops Section -->
+      <div class="row align-items-center">
+        <div class="col-md-6 order-md-2 mb-4 mb-md-0">
+          <img src="images/aboutpic.png" class="img-fluid rounded" alt="BridgeUTK Workshops">
+        </div>
+        <div class="col-md-6 order-md-1">
+          <h4 class="benefit-title mb-3">Workshops</h4>
+          <p>
+            Our chapter offers our professional network to make it easier for members to land internships. 
+            BridgeUTK partners with many professors and works closely with both the <strong>Baker School of Public Policy</strong> 
+            and the <strong>Political Science Department</strong>. 
+            Our goal is to provide opportunities for you to improve your resume — whether it be through writing for our newsletter, 
+            doing research with a professor, or landing an internship.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Ribbon with Social/Links Buttons -->
+  <section class="ribbon-section bg-white py-4">
     <div class="container text-center">
       <div class="d-flex flex-wrap justify-content-center gap-3">
         <a href="https://www.instagram.com/bridge.utk?igsh=MXVhcDkwOGlhdjZiMg==" target="_blank" class="btn btn-primary btn-lg shadow-sm">Instagram</a>
@@ -102,8 +163,7 @@
     </div>
   </section> 
 
-  <!--  Footer -->
-
+  <!-- Footer -->
   <footer class="bg-dark text-white p-4 text-center">
     <div class="container">
       <p class="mb-1">BridgeUTK | University of Tennessee, Knoxville</p>
@@ -119,7 +179,7 @@
     </div>
   </footer>
 
-  <!-- Bootstrap Bundle JS (via CDN) -->
+  <!-- Bootstrap Bundle JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
