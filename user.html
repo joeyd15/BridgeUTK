@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Join Queue | BridgeUTK Queue</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { font-family: 'Raleway', sans-serif; background-color: #f8f9fa; }
+    .queue-card { background: white; border-radius: 8px; padding: 10px 15px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    #queueContainer, #joinSection, #logoutSection { display: none; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm fixed-top">
+    <div class="container">
+      <a class="navbar-brand fw-bold" href="index.html">BridgeUTK</a>
+    </div>
+  </nav>
+
+  <main class="container text-center" style="margin-top:90px;">
+    <h3 class="fw-bold mb-4">Join Discussion Queue</h3>
+
+    <!-- Auth -->
+    <div id="authSection">
+      <input id="email" type="email" class="form-control mb-2" placeholder="Email">
+      <input id="password" type="password" class="form-control mb-3" placeholder="Password (min 6 chars)">
+      <button id="loginBtn" class="btn btn-primary">Sign In</button>
+      <button id="signupBtn" class="btn btn-secondary ms-2">Create Account</button>
+    </div>
+
+    <!-- After Login -->
+    <div id="logoutSection" class="mb-4">
+      <p id="welcomeText" class="fw-bold mb-2"></p>
+      <button id="logoutBtn" class="btn btn-outline-danger btn-sm">Sign Out</button>
+    </div>
+
+    <!-- Join Queue -->
+    <div id="joinSection" class="mt-4">
+      <input id="sessionCode" class="form-control mb-2" placeholder="Session Code (e.g. BRG-AB12)">
+      <input id="userName" class="form-control mb-3" placeholder="Your Display Name">
+      <button id="joinBtn" class="btn btn-primary">Join Queue</button>
+    </div>
+
+    <!-- Queue -->
+    <div id="queueContainer" class="mt-4">
+      <h5 class="fw-bold mb-3">Current Queue</h5>
+      <div id="queueList"></div>
+      <button id="leaveBtn" class="btn btn-danger mt-3">Leave Queue</button>
+    </div>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+    // 🔧 Your Firebase Config (working one)
+    const firebaseConfig = {
+      apiKey: "AIzaSyB4AqUHT6oseUe-Jcseco3o9iWJcFOEWV4",
+      authDomain: "nick-club-w.firebaseapp.com",
+      projectId: "nick-club-w",
+      storageBucket: "nick-club-w.firebasestorage.app",
+      messagingSenderId: "734053046525",
+      appId: "1:734053046525:web:b0baa61813874930148694"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    const authSection = document.getElementById("authSection");
+    const joinSection = document.getElementById("joinSection");
+    const queueContainer = document.getElementById("queueContainer");
+    const logoutSection = document.getElementById("logoutSection");
+    const loginBtn = document.getElementById("loginBtn");
+    const signupBtn = document.getElementById("signupBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const welcomeText = document.getElementById("welcomeText");
+    const joinBtn = document.getElementById("joinBtn");
+    const leaveBtn = document.getElementById("leaveBtn");
+    const queueListEl = document.getElementById("queueList");
+
+    let sessionCode = "", currentUserId = "", queueUnsub = null;
+
+    // Auth handlers
+    loginBtn.onclick = async () => {
+      try {
+        await signInWithEmailAndPassword(auth, email.value.trim(), password.value.trim());
+      } catch (e) { alert(e.message); }
+    };
+    signupBtn.onclick = async () => {
+      try {
+        await createUserWithEmailAndPassword(auth, email.value.trim(), password.value.trim());
+        alert("Account created successfully!");
+      } catch (e) { alert(e.message); }
+    };
+    logoutBtn.onclick = () => signOut(auth);
+
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        authSection.style.display = "none";
+        logoutSection.style.display = "block";
+        joinSection.style.display = "block";
+        welcomeText.textContent = `Welcome, ${user.email}`;
+      } else {
+        authSection.style.display = "block";
+        logoutSection.style.display = "none";
+        joinSection.style.display = "none";
+        queueContainer.style.display = "none";
+      }
+    });
+
+    joinBtn.onclick = async () => {
+      sessionCode = sessionCode.value.trim();
+      const name = userName.value.trim();
+      if (!sessionCode || !name) return alert("Enter session code and name.");
+      const qRef = collection(db, "sessions", sessionCode, "queue");
+      const user = auth.currentUser;
+      const docRef = await addDoc(qRef, { uid: user.uid, name, hasSpoken: false, isCurrent: false, joinTime: Date.now() });
+      currentUserId = docRef.id;
+      queueContainer.style.display = "block";
+      listenToQueue();
+    };
+
+    function listenToQueue() {
+      if (queueUnsub) queueUnsub();
+      const qRef = collection(db, "sessions", sessionCode, "queue");
+      queueUnsub = onSnapshot(qRef, snap => {
+        queueListEl.innerHTML = "";
+        let members = [];
+        snap.forEach(d => members.push(d.data()));
+        members.sort((a,b)=>a.joinTime-b.joinTime);
+        members.forEach(m=>{
+          const card=document.createElement("div");
+          card.className="queue-card";
+          card.innerHTML=`<strong>${m.name}</strong> ${m.hasSpoken?'(Spoken)':''}`;
+          queueListEl.appendChild(card);
+        });
+      });
+    }
+
+    leaveBtn.onclick = async () => {
+      if (sessionCode && currentUserId)
+        await deleteDoc(doc(db, "sessions", sessionCode, "queue", currentUserId));
+      location.reload();
+    };
+  </script>
+</body>
+</html>
