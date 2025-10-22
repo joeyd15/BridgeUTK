@@ -26,88 +26,111 @@
   </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, updateDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getFirestore, collection, onSnapshot, updateDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-    // 🔧 Your Firebase Config
-    const firebaseConfig = {
-      apiKey: "AIzaSyB4AqUHT6oseUe-Jcseco3o9iWJcFOEWV4",
-      authDomain: "nick-club-w.firebaseapp.com",
-      projectId: "nick-club-w",
-      storageBucket: "nick-club-w.firebasestorage.app",
-      messagingSenderId: "734053046525",
-      appId: "1:734053046525:web:b0baa61813874930148694"
-    };
+  // 🔧 Firebase Config
+  const firebaseConfig = {
+    apiKey: "AIzaSyB4AqUHT6oseUe-Jcseco3o9iWJcFOEWV4",
+    authDomain: "nick-club-w.firebaseapp.com",
+    projectId: "nick-club-w",
+    storageBucket: "nick-club-w.firebasestorage.app",
+    messagingSenderId: "734053046525",
+    appId: "1:734053046525:web:b0baa61813874930148694"
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const queueList=document.getElementById("queueList");
-    const sessionInfo=document.getElementById("sessionInfo");
-    let unsub=null, currentSession=null;
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-    // 🔹 Generate a random code like BRG-AB12
-    function generateCode() {
-      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-      const digits = "0123456789";
-      return "BRG-" +
-        letters[Math.floor(Math.random()*26)] +
-        letters[Math.floor(Math.random()*26)] +
-        digits[Math.floor(Math.random()*10)] +
-        digits[Math.floor(Math.random()*10)];
-    }
+  const queueList = document.getElementById("queueList");
+  const sessionInfo = document.getElementById("sessionInfo");
+  let unsub = null;
+  let currentSession = null;
 
-    // 🟢 Start new session
-    document.getElementById("startBtn").onclick=async()=>{
-      const newCode = generateCode();
-      const sessionRef = doc(db, "sessions", newCode);
-      await setDoc(sessionRef, {
-        active: true,
-        createdAt: new Date().toISOString(),
-        groups: 1,
-        moderator: "admin"
+  // Generate a session code like BRG-AB12
+  function generateCode() {
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const digits = "0123456789";
+    return "BRG-" +
+      letters[Math.floor(Math.random() * 26)] +
+      letters[Math.floor(Math.random() * 26)] +
+      digits[Math.floor(Math.random() * 10)] +
+      digits[Math.floor(Math.random() * 10)];
+  }
+
+  // Start a new session
+  document.getElementById("startBtn").onclick = async () => {
+    const newCode = generateCode();
+    const sessionRef = doc(db, "sessions", newCode);
+    await setDoc(sessionRef, {
+      active: true,
+      createdAt: new Date().toISOString(),
+      groups: 1,
+      moderator: "admin"
+    });
+    currentSession = newCode;
+    sessionInfo.innerHTML = `Session Started: <strong>${newCode}</strong>`;
+    loadQueue(newCode);
+  };
+
+  // Load an existing session
+  document.getElementById("loadBtn").onclick = () => {
+    const code = document.getElementById("sessionCode").value.trim();
+    if (!code) return alert("Enter session code");
+    currentSession = code;
+    sessionInfo.innerHTML = `Loaded Session: <strong>${code}</strong>`;
+    loadQueue(code);
+  };
+
+  // Listen to queue updates
+  function loadQueue(code) {
+    if (unsub) unsub();
+    const qRef = collection(db, "sessions", code, "queue");
+    unsub = onSnapshot(qRef, (snap) => {
+      queueList.innerHTML = "";
+      const members = [];
+      snap.forEach((d) => members.push({ ...d.data(), id: d.id }));
+      members.sort((a, b) => a.joinTime - b.joinTime);
+
+      members.forEach((m) => {
+        const card = document.createElement("div");
+        card.className = "queue-card";
+        card.innerHTML = `
+          <b>${m.name}</b> 
+          ${m.hasSpoken ? "<span class='badge bg-secondary ms-2'>Spoken</span>" : ""}
+          <div class='mt-2'>
+            <button class='btn btn-sm btn-success me-2 mark-btn' data-id='${m.id}'>Mark Spoken</button>
+            <button class='btn btn-sm btn-danger remove-btn' data-id='${m.id}'>Remove</button>
+          </div>`;
+        queueList.appendChild(card);
       });
-      currentSession = newCode;
-      sessionInfo.innerHTML = `Session Started: <strong>${newCode}</strong>`;
-      loadQueue(newCode);
-    };
 
-    // 🔵 Load existing queue
-    document.getElementById("loadBtn").onclick=()=>{
-      const code=document.getElementById("sessionCode").value.trim();
-      if(!code)return alert("Enter session code");
-      sessionInfo.innerHTML=`Loaded Session: <strong>${code}</strong>`;
-      loadQueue(code);
-    };
-
-    // 👂 Live updates
-    function loadQueue(code){
-      if(unsub)unsub();
-      const qRef=collection(db,"sessions",code,"queue");
-      unsub=onSnapshot(qRef,snap=>{
-        queueList.innerHTML="";
-        const members=[];
-        snap.forEach(d=>members.push({...d.data(),id:d.id}));
-        members.sort((a,b)=>a.joinTime-b.joinTime);
-        members.forEach(m=>{
-          const card=document.createElement("div");
-          card.className="queue-card";
-          card.innerHTML=`<b>${m.name}</b> ${m.hasSpoken?"<span class='badge bg-secondary ms-2'>Spoken</span>":""}
-            <div class='mt-2'>
-              <button class='btn btn-sm btn-success me-2' onclick='markSpoken("${code}","${m.id}")'>Mark Spoken</button>
-              <button class='btn btn-sm btn-danger' onclick='removeUser("${code}","${m.id}")'>Remove</button>
-            </div>`;
-          queueList.appendChild(card);
-        });
+      // Attach working click events AFTER rendering
+      document.querySelectorAll(".mark-btn").forEach((btn) => {
+        btn.onclick = () => markSpoken(code, btn.dataset.id, btn);
       });
-    }
+      document.querySelectorAll(".remove-btn").forEach((btn) => {
+        btn.onclick = () => removeUser(code, btn.dataset.id);
+      });
+    });
+  }
 
-    // 🔧 Global functions for queue actions
-    window.markSpoken=async(session,id)=>{
-      await updateDoc(doc(db,"sessions",session,"queue",id),{hasSpoken:true});
-    };
-    window.removeUser=async(session,id)=>{
-      await deleteDoc(doc(db,"sessions",session,"queue",id));
-    };
-  </script>
+  // Mark a user as spoken ✅
+  async function markSpoken(session, id, btnEl) {
+    const ref = doc(db, "sessions", session, "queue", id);
+    await updateDoc(ref, { hasSpoken: true });
+    btnEl.innerHTML = "✅ Marked";
+    btnEl.classList.remove("btn-success");
+    btnEl.classList.add("btn-outline-secondary");
+  }
+
+  // Remove a user ❌
+  async function removeUser(session, id) {
+    const ref = doc(db, "sessions", session, "queue", id);
+    await deleteDoc(ref);
+    alert("Removed from queue");
+  }
+</script>
+
 </body>
 </html>
