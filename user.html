@@ -114,33 +114,43 @@
     });
 
     joinBtn.onclick = async () => {
-      sessionCode = sessionCode.value.trim();
-      const name = userName.value.trim();
-      if (!sessionCode || !name) return alert("Enter session code and name.");
-      const qRef = collection(db, "sessions", sessionCode, "queue");
-      const user = auth.currentUser;
-      const docRef = await addDoc(qRef, { uid: user.uid, name, hasSpoken: false, isCurrent: false, joinTime: Date.now() });
-      currentUserId = docRef.id;
-      queueContainer.style.display = "block";
-      listenToQueue();
-    };
+  const sessionInput = document.getElementById("sessionCode").value.trim();
+  const name = document.getElementById("userName").value.trim();
+  if (!sessionInput || !name) return alert("Enter session code and name.");
+  
+  const user = auth.currentUser;
+  const qRef = collection(db, "sessions", sessionInput, "queue");
+  const docRef = await addDoc(qRef, {
+    uid: user.uid,
+    name,
+    hasSpoken: false,
+    isCurrent: false,
+    joinTime: Date.now()
+  });
+  currentUserId = docRef.id;
+  sessionCode = sessionInput; // Store for later (for leaving)
+  queueContainer.style.display = "block";
+  listenToQueue();
+};
+
 
     function listenToQueue() {
-      if (queueUnsub) queueUnsub();
-      const qRef = collection(db, "sessions", sessionCode, "queue");
-      queueUnsub = onSnapshot(qRef, snap => {
-        queueListEl.innerHTML = "";
-        let members = [];
-        snap.forEach(d => members.push(d.data()));
-        members.sort((a,b)=>a.joinTime-b.joinTime);
-        members.forEach(m=>{
-          const card=document.createElement("div");
-          card.className="queue-card";
-          card.innerHTML=`<strong>${m.name}</strong> ${m.hasSpoken?'(Spoken)':''}`;
-          queueListEl.appendChild(card);
-        });
-      });
-    }
+  if (queueUnsub) queueUnsub();
+  const qRef = collection(db, "sessions", sessionCode, "queue");
+  queueUnsub = onSnapshot(qRef, (snap) => {
+    queueListEl.innerHTML = "";
+    let members = [];
+    snap.forEach((d) => members.push(d.data()));
+    members.sort((a, b) => a.joinTime - b.joinTime);
+    members.forEach((m) => {
+      const card = document.createElement("div");
+      card.className = "queue-card";
+      card.innerHTML = `<strong>${m.name}</strong> ${m.hasSpoken ? '(Spoken)' : ''}`;
+      queueListEl.appendChild(card);
+    });
+  });
+}
+
 
     leaveBtn.onclick = async () => {
       if (sessionCode && currentUserId)
