@@ -159,7 +159,13 @@
       }
 
       const events = [];
-      querySnapshot.forEach((doc) => events.push(doc.data()));
+      querySnapshot.forEach((doc) => {
+  const data = doc.data();
+  if (data.active !== false) { // show only if not explicitly false
+    events.push(data);
+  }
+});
+
 
       // sort by date/time
       events.sort((a, b) => getEventMillis(a) - getEventMillis(b));
